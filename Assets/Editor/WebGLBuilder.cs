@@ -26,6 +26,10 @@ namespace Xunyi.EditorTools
             // Unity 2022.3 的 API：PlayerSettings.WebGL.compressionFormat
             // （Unity 6 才是 EditorUserBuildSettings.webGLCompressionFormat）
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+
+            // 9:16 竖屏：使用工程内自定义模板（默认模板是 960x600 横屏）
+            PlayerSettings.WebGL.template = "PROJECT:XunyiPortrait";
+
             AssetDatabase.SaveAssets();
 
             // 2) 切平台

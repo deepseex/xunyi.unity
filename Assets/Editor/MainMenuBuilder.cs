@@ -550,6 +550,12 @@ namespace Xunyi.EditorTools
 
         private static Font GetDefaultFont()
         {
+            // WebGL 里没有系统字体可回退，内置 LegacyRuntime.ttf 不含中文字形，
+            // 所以必须用工程内置的中文字体（Noto Sans SC 子集）。
+            Font cjk = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/XunyiCJK.otf");
+            if (cjk != null) return cjk;
+
+            Debug.LogWarning("[MainMenuBuilder] 未找到 Assets/Fonts/XunyiCJK.otf，回退到内置字体（中文会丢失）");
             Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
             return font;

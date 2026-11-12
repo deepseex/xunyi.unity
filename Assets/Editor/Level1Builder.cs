@@ -875,7 +875,9 @@ namespace Xunyi.EditorTools
             rect.SetParent(parent, false);
 
             Text text = go.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            // 必须用工程内置中文字体：WebGL 无系统字体，内置字体无中文字形
+            Font cjk = AssetDatabase.LoadAssetAtPath<Font>("Assets/Fonts/XunyiCJK.otf");
+            text.font = cjk != null ? cjk : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             text.text = content;
             text.fontSize = size;
             text.alignment = anchor;

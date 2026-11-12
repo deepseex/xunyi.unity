@@ -1,0 +1,59 @@
+# ---------------------------------------------------------------
+# Unity 项目 .gitignore
+# 目标：排除 Library/Temp/Logs 等巨型或机器相关目录，
+#       保留 Assets/、ProjectSettings/、Packages/ 与 Builds/WebGL/
+# 注意：不要忽略 Builds/ —— GitHub Pages 发布源就在 Builds/WebGL
+# ---------------------------------------------------------------
+
+# Unity 自动生成 / 缓存
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+[Uu]ser[Ss]ettings/
+sysinfo.txt
+crashlytics-build.properties
+
+# 本机 Unity 崩溃与构建临时目录
+[Bb]uilds/[Ww]eb[Gg][Ll]/[Tt]emp/
+[Bb]uilds/[Ww]eb[Gg][Ll]/[Ll]ogs/
+
+# IDE / 解决方案
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# 本会话的 Agent 工具目录（技能库 + 第三方仓库），与游戏无关
+.dsh/
+.tools/
+
+# 系统与临时文件
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+*~
+
+# 打包产物（除 WebGL 之外的本地构建）
+Builds/Windows/
+Builds/Android/
+Builds/iOS/
+*.apk
+*.aab
+*.unitypackage

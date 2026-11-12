@@ -1,0 +1,49 @@
+name: Deploy WebGL to GitHub Pages
+
+# 触发：推送到 main，或在 Actions 页面手动运行
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# GitHub Pages 需要的权限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一个部署，新的推送取消排队中的旧任务
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 本项目在本地用 Unity 构建，产物已提交在 Builds/WebGL
+      # 所以这里只需要把该目录打成 Pages 产物，无需在 CI 里跑 Unity
+      - name: Verify build output exists
+        run: |
+          if [ ! -f "Builds/WebGL/index.html" ]; then
+            echo "::error::Builds/WebGL/index.html 不存在，请先在本地执行 WebGL 构建并提交产物。"
+            exit 1
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: Builds/WebGL
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

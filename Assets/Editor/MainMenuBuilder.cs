@@ -182,7 +182,16 @@ namespace Xunyi.EditorTools
         {
             if (!File.Exists(BackgroundSource))
             {
-                Debug.LogError("[MainMenuBuilder] 找不到底图：" + BackgroundSource);
+                // 源目录可能已被清理（例如旧工程删除）：只要工程内已有这张贴图就直接复用
+                TextureImporter fallback = AssetImporter.GetAtPath(SpritePath) as TextureImporter;
+                if (fallback != null)
+                {
+                    ApplySpriteImportSettings(fallback);
+                    Debug.Log("[MainMenuBuilder] 源图缺失，复用工程内已有底图：" + SpritePath);
+                    return AssetDatabase.LoadAssetAtPath<Sprite>(SpritePath);
+                }
+
+                Debug.LogError("[MainMenuBuilder] 找不到底图：" + BackgroundSource + "，工程内也没有 " + SpritePath);
                 return null;
             }
 

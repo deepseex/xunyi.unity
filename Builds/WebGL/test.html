@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>寻遗 · 设备诊断</title>
+<style>
+  html, body { margin: 0; padding: 16px; background: #111; color: #eee;
+    font: 15px/1.7 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  h1 { font-size: 19px; margin: 0 0 4px; color: #7fd; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 7px 4px; border-bottom: 1px solid #262626; vertical-align: top; }
+  td.k { color: #9ad; width: 42%; }
+  .ok { color: #6f6; font-weight: 600; }
+  .bad { color: #f66; font-weight: 600; }
+  .warn { color: #fc6; }
+  #verdict { margin-top: 18px; padding: 12px; border-radius: 8px; background: #1a1a1a; }
+</style>
+</head>
+<body>
+  <h1>页面已加载 ✓</h1>
+  <div class="sub">如果你能看到这一行，说明网络、域名、HTML 都没问题，问题在下面某一项。</div>
+  <table id="rows"></table>
+  <div id="verdict">检测中…</div>
+
+<script>
+(function () {
+  var rows = [];
+  function add(k, v, cls) {
+    rows.push('<tr><td class="k">' + k + '</td><td class="' + (cls || '') + '">' + v + '</td></tr>');
+  }
+
+  add('URL', location.href);
+  add('User-Agent', navigator.userAgent);
+  add('屏幕', screen.width + ' × ' + screen.height + '  dpr=' + (window.devicePixelRatio || 1));
+  add('视口', window.innerWidth + ' × ' + window.innerHeight);
+
+  // WebGL 1 / 2
+  var gl1 = null, gl2 = null, err = '';
+  try {
+    var c1 = document.createElement('canvas');
+    gl1 = c1.getContext('webgl') || c1.getContext('experimental-webgl');
+  } catch (e) { err += 'WebGL1:' + e.message + ' '; }
+  try {
+    var c2 = document.createElement('canvas');
+    gl2 = c2.getContext('webgl2') || c2.getContext('experimental-webgl2');
+  } catch (e) { err += 'WebGL2:' + e.message + ' '; }
+
+  add('WebGL 1.0', gl1 ? '支持' : '不支持', gl1 ? 'ok' : 'bad');
+  add('WebGL 2.0', gl2 ? '支持' : '不支持', gl2 ? 'ok' : 'bad');
+  if (err) add('上下文异常', err, 'bad');
+
+  // GPU 信息
+  var dbg = null;
+  try {
+    var g = gl2 || gl1;
+    if (g) {
+      dbg = g.getExtension('WEBGL_debug_renderer_info');
+      add('GPU', dbg ? g.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : '(不可读)');
+      add('显存上限', g.getParameter(g.MAX_TEXTURE_SIZE) + ' px 贴图');
+    }
+  } catch (e) {}
+
+  // WebAssembly
+  var wasm = (typeof WebAssembly === 'object');
+  add('WebAssembly', wasm ? '支持' : '不支持', wasm ? 'ok' : 'bad');
+  if (wasm) {
+    try {
+      var mem = new WebAssembly.Memory({ initial: 1024 }); // 64MB
+      add('64MB 内存分配', '成功', 'ok');
+    } catch (e) {
+      add('64MB 内存分配', '失败：' + e.message, 'bad');
+    }
+  }
+
+  // 能不能读到数据文件
+  add('数据文件探测', '请求中…', 'warn');
+  var probe = document.getElementById('rows');
+  probe.innerHTML = rows.join('');
+  var probeCell = probe.querySelector('tr:last-child td:last-child');
+
+  fetch('Build/WebGL.data', { method: 'HEAD' })
+    .then(function (r) {
+      probeCell.textContent = 'HTTP ' + r.status + '  ' + (r.headers.get('content-length') || '?') + ' 字节';
+      probeCell.className = r.ok ? 'ok' : 'bad';
+    })
+    .catch(function (e) {
+      probeCell.textContent = '失败：' + e.message;
+      probeCell.className = 'bad';
+    });
+
+  // 结论
+  setTimeout(function () {
+    var v = document.getElementById('verdict');
+    if (!wasm) {
+      v.innerHTML = '<b>结论：</b>浏览器不支持 WebAssembly，Unity WebGL 无法运行。';
+    } else if (!gl2) {
+      v.innerHTML = '<b>结论：</b>这台设备<b>不支持 WebGL 2.0</b>，Unity 2022 的 WebGL 构建无法运行。<br>' +
+        'iOS 需要 15.0+；鸿蒙请用最新系统浏览器或 Chrome/Edge。';
+    } else {
+      v.innerHTML = '<b>结论：</b>硬件能力正常，游戏应该能跑。若主页面仍黑屏，请把本页截图发给开发者。';
+    }
+  }, 1200);
+})();
+</script>
+</body>
+</html>

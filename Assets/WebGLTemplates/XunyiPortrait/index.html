@@ -8,7 +8,12 @@
     <link rel="stylesheet" href="TemplateData/style.css">
   <style>
     /* 9:16 竖屏：以 JS 计算为主，这里只是首帧兜底 */
-    html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
+    html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden;
+                 color: #eee; font: 15px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+    /* 关键：给容器一个默认尺寸。即使 JS 失败，也不会变成 0x0 的全黑 */
+    #unity-container { width: 100vw; height: 100vh; }
+    #boot-hint { position: fixed; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+                 text-align: center; color: #ccc; z-index: 5; pointer-events: none; }
     #unity-container { position: fixed !important; left: 50% !important; top: 50% !important;
                        transform: translate(-50%, -50%) !important; }
     #unity-canvas { width: 100% !important; height: 100% !important; display: block; }
@@ -24,6 +29,7 @@
   </style>
   </head>
   <body>
+    <div id="boot-hint">正在加载《寻遗》…<br><span style="font-size:13px;opacity:.7">若长时间无反应，请确认浏览器支持 WebGL 2.0</span></div>
     <div id="fatal-overlay"><h2 id="fatal-title">启动失败</h2><div id="fatal-body"></div>
       <div class="hint">请把上面这段文字截图或复制发给开发者。</div></div>
     <div id="unity-container" class="unity-desktop">
@@ -76,6 +82,8 @@
       // ——— 黑屏自诊断：任何启动/运行错误都显示在页面上 ———
       function showFatal(title, detail) {
         var overlay = document.getElementById('fatal-overlay');
+        var hint = document.getElementById('boot-hint');
+        if (hint) hint.style.display = 'none';
         if (!overlay) { alert(title + "\n" + detail); return; }
         document.getElementById('fatal-title').textContent = title;
         document.getElementById('fatal-body').textContent = String(detail === undefined ? '' : detail);
@@ -191,6 +199,8 @@
           progressBarFull.style.width = 100 * progress + "%";
               }).then((unityInstance) => {
                 loadingBar.style.display = "none";
+                var hint = document.getElementById('boot-hint');
+                if (hint) hint.style.display = 'none';
                 fullscreenButton.onclick = () => {
                   unityInstance.SetFullscreen(1);
                 };

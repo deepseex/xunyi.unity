@@ -13,9 +13,19 @@
                        transform: translate(-50%, -50%) !important; }
     #unity-canvas { width: 100% !important; height: 100% !important; display: block; }
     #unity-footer { position: relative; z-index: 10; }
+    #fatal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: #111; color: #eee; padding: 24px; box-sizing: border-box;
+      font: 15px/1.6 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow: auto; white-space: pre-wrap; word-break: break-word;
+    }
+    #fatal-overlay h2 { color: #ff6b6b; font-size: 18px; margin: 0 0 12px; }
+    #fatal-overlay .hint { color: #9ad; margin-top: 16px; }
   </style>
   </head>
   <body>
+    <div id="fatal-overlay"><h2 id="fatal-title">启动失败</h2><div id="fatal-body"></div>
+      <div class="hint">请把上面这段文字截图或复制发给开发者。</div></div>
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=1080 height=1920 tabindex="-1"></canvas>
       <div id="unity-loading-bar">
@@ -62,6 +72,43 @@
       window.addEventListener('resize', layoutPortrait);
       window.addEventListener('orientationchange', layoutPortrait);
       layoutPortrait();
+
+      // ——— 黑屏自诊断：任何启动/运行错误都显示在页面上 ———
+      function showFatal(title, detail) {
+        var overlay = document.getElementById('fatal-overlay');
+        if (!overlay) { alert(title + "\n" + detail); return; }
+        document.getElementById('fatal-title').textContent = title;
+        document.getElementById('fatal-body').textContent = String(detail === undefined ? '' : detail);
+        overlay.style.display = 'block';
+        if (loadingBar) loadingBar.style.display = 'none';
+      }
+
+      window.addEventListener('error', function (e) {
+        showFatal('运行错误（Runtime Error）',
+          (e.message || (e.error && e.error.message) || '未知错误') +
+          (e.filename ? '\n' + e.filename + ':' + e.lineno : ''));
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        showFatal('异步错误（Unhandled Rejection）',
+          (r && (r.message || r.stack)) || String(r));
+      });
+
+      // WebGL 2.0 能力检测（iOS < 15 会在这里失败）
+      (function checkWebGL2() {
+        var supported = false;
+        try {
+          var probe = document.createElement('canvas');
+          supported = !!(probe.getContext('webgl2') || probe.getContext('experimental-webgl2'));
+        } catch (err) { supported = false; }
+        if (!supported) {
+          showFatal('浏览器不支持 WebGL 2.0',
+            '当前浏览器无法创建 WebGL 2.0 上下文，游戏无法运行。\n\n' +
+            '· iOS：请升级到 15.0 或更高版本\n' +
+            '· 鸿蒙：请用系统浏览器最新版，或安装 Chrome / Edge\n' +
+            '· 部分浏览器需在设置中开启「硬件加速」');
+        }
+      })();
 
       // Shows a temporary message banner/ribbon for a few seconds, or
       // a permanent error message on top of the canvas if type=='error'.
@@ -132,10 +179,7 @@
 
 
       } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+        // Desktop: 保持 layoutPortrait() 计算的 9:16 尺寸，不再写死 960x600
       }
 
       loadingBar.style.display = "block";
@@ -151,7 +195,7 @@
                   unityInstance.SetFullscreen(1);
                 };
               }).catch((message) => {
-                alert(message);
+                showFatal("游戏启动失败", message);
               });
             };
 

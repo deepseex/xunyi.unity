@@ -192,12 +192,37 @@
 
       loadingBar.style.display = "block";
 
+      // ——— 进度显示 + 看门狗：卡住时把进度和阶段打到页面上 ———
+      var lastProgress = 0;
+      var startedAt = Date.now();
+      var watchdog = setInterval(function () {
+        var elapsed = Math.round((Date.now() - startedAt) / 1000);
+        var hint = document.getElementById('boot-hint');
+        if (hint) {
+          hint.innerHTML = '正在加载《寻遗》… ' + Math.round(lastProgress * 100) + '%'
+            + '<br><span style="font-size:13px;opacity:.7">已等待 ' + elapsed + ' 秒</span>';
+        }
+        if (elapsed >= 90 && lastProgress < 1) {
+          clearInterval(watchdog);
+          showFatal('加载超时（90 秒）',
+            '卡在 ' + Math.round(lastProgress * 100) + '% 处，通常是以下原因：\n\n'
+            + '· 微信/QQ 内置浏览器对 WebGL 内存有限制 —— 请点右上角「…」选择「在浏览器中打开」\n'
+            + '· 网络较慢，资源未下载完（wasm 约 18 MB）\n'
+            + '· 设备内存不足');
+        }
+      }, 1000);
+
       var script = document.createElement("script");
       script.src = loaderUrl;
+      script.onerror = function () {
+        showFatal('加载器下载失败', '无法获取 ' + loaderUrl + '\n请检查网络后重试。');
+      };
       script.onload = () => {
         createUnityInstance(canvas, config, (progress) => {
+          lastProgress = progress;
           progressBarFull.style.width = 100 * progress + "%";
               }).then((unityInstance) => {
+                clearInterval(watchdog);
                 loadingBar.style.display = "none";
                 var hint = document.getElementById('boot-hint');
                 if (hint) hint.style.display = 'none';
@@ -205,6 +230,7 @@
                   unityInstance.SetFullscreen(1);
                 };
               }).catch((message) => {
+                clearInterval(watchdog);
                 showFatal("游戏启动失败", message);
               });
             };
